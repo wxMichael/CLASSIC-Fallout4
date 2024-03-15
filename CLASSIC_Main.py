@@ -583,7 +583,7 @@ def main_files_backup():
     backup_list = constants.get_constant_from_key_path("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_AutoBackup")
     game_path = constants.get_constant_from_key_path(f"CLASSIC Data/CLASSIC {constants.game} Local.yaml", f"Game{constants.vr}_Info.Root_Folder_Game")
     xse_acronym = constants.get_constant_from_key_path(f"CLASSIC Data/databases/CLASSIC {constants.game}.yaml", f"Game{constants.vr}_Info.XSE_Acronym")
-    xse_acronym_base = constants.get_constant_from_key_path(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
+    xse_acronym_base = constants.get_constant_from_key_path(f"CLASSIC Data/databases/CLASSIC {constants.game}.yaml", "Game_Info.XSE_Acronym")
     xse_log_file = constants.get_constant_from_key_path(f"CLASSIC Data/CLASSIC {constants.game} Local.yaml", f"Game{constants.vr}_Info.Docs_File_XSE")
     xse_ver_latest = constants.get_constant_from_key_path(f"CLASSIC Data/databases/CLASSIC {constants.game}.yaml", f"Game{constants.vr}_Info.XSE_Ver_Latest")
     with open(xse_log_file, "r", encoding="utf-8", errors="ignore") as xse_log:
