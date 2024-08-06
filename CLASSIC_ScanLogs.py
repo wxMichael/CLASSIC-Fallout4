@@ -11,6 +11,7 @@ import CLASSIC_ScanGame as CGame
 from urllib.parse import urlparse
 from collections import Counter
 from pathlib import Path
+from functools import lru_cache
 
 CMain.configure_logging()
 
@@ -30,7 +31,7 @@ def pastebin_fetch(url):
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
-
+@lru_cache(maxsize=None)
 def get_entry(formid, plugin) -> str | None:
     if os.path.isfile(f"CLASSIC Data/databases/{CMain.game} FormIDs.db"):
         with sqlite3.connect(f"CLASSIC Data/databases/{CMain.game} FormIDs.db") as conn:
@@ -124,7 +125,7 @@ def crashlogs_scan():
     game_ignore_records = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Records_Exclude")
     suspects_error_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Error_Check")
     suspects_stack_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Stack_Check")
-    
+
     autoscan_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.game}")
     remove_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")
     ignore_list = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.game}")
@@ -292,9 +293,13 @@ def crashlogs_scan():
         if CMain.game == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
         elif CMain.game == "SkyrimSE":
             if any("Skyrim.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
 
         # ================================================
         # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
@@ -413,11 +418,12 @@ def crashlogs_scan():
         autoscan_report.extend(["====================================================\n",
                                 "CHECKING IF NECESSARY FILES/SETTINGS ARE CORRECT...\n",
                                 "====================================================\n"])
-
+        Is_XCellPresent = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
         if not CMain.classic_settings("FCX Mode"):
             autoscan_report.extend(["* NOTICE: FCX MODE IS DISABLED. YOU CAN ENABLE IT TO DETECT PROBLEMS IN YOUR MOD & GAME FILES * \n",
                                     "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n"])
-
+            if Is_XCellPresent:
+                crashgen_ignore.extend(["havokmemorysystem", "scaleformallocator", "smallblockallocator"])
             for line in segment_crashgen:
                 if "false" in line.lower() and all(elem.lower() not in line.lower() for elem in crashgen_ignore):
                     line_split = line.split(":", 1)
@@ -431,11 +437,40 @@ def crashlogs_scan():
                         autoscan_report.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
                 if "memorymanager:" in line.lower():
-                    if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                    if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules) and not Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
+                    elif "true" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                        autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
+                                            f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                    elif "false" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                        autoscan_report.extend([f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
                     else:
                         autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                        autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
+                                                f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
+
+                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
+                                            f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.append(f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
+
+                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
+                                            f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.extend([f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
+
+                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.extend(["# ❌ CAUTION : SmallBlockAllocator parameter is set to TRUE # \n",
+                                            f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                    autoscan_report.extend([f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
                 if "f4ee:" in line.lower():
                     if "false" in line.lower() and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
@@ -443,6 +478,8 @@ def crashlogs_scan():
                                                 f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n"])
                     else:
                         autoscan_report.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+
         else:
             autoscan_report.extend(["* NOTICE: FCX MODE IS ENABLED. CLASSIC MUST BE RUN BY THE ORIGINAL USER FOR CORRECT DETECTION * \n",
                                     "[ To disable mod & game files detection, disable FCX Mode in the exe or CLASSIC Settings.yaml ] \n\n"])
@@ -712,10 +749,10 @@ if __name__ == "__main__":
 
     if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and not str(scan_path) == CMain.classic_settings("SCAN Custom Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
-    
+
     if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and not str(mods_folder_path) == CMain.classic_settings("MODS Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
-    
+
     if isinstance(args.simplify_logs, bool) and not args.simplify_logs == CMain.classic_settings("Simplify Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
 

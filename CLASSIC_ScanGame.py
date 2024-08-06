@@ -104,6 +104,8 @@ def check_crashgen_settings():
                              f"When editing {crashgen_name} toml settings, make sure you are editing the correct file. \n",
                              f"Please recheck your {crashgen_name} installation and delete any obsolete files. \n-----\n"])
 
+    IsXCellPresent = any("xcell" in file.lower() for file in xse_folder)
+    IsBakaScrapHeapPresent = any("bakascrapheap" in file.lower() for file in xse_folder)
     if crashgen_toml_main:
         if mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
@@ -112,12 +114,45 @@ def check_crashgen_settings():
         else:
             message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and any("bakascrapheap" in file.lower() for file in xse_folder):
+        if mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsBakaScrapHeapPresent:
             message_list.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                  f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
+        elif mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
+                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+            mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         else:
             message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+        if mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE # \n",
+                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+            mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
+        else:
+            message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+        if mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextireStreamerLocalHeap parameter is set to TRUE # \n",
+                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+            mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap", "False")
+        else:
+            message_list.append(f"✔️ BSTextireStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+        if mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
+                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+            mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
+        else:
+            message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+        if mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
+                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+            mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
+        else:
+            message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
 
         if mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
@@ -447,9 +482,9 @@ def scan_mods_unpacked():
                             modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                     # ================================================
                     # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                    elif (".csg" or ".cdx" or ".uvd" or "_oc.nif") in filename.lower() and "previs repair pack" not in root.lower():
+                    elif (".uvd" or "_oc.nif") in filename.lower():
                         root_main = main_path.split(os.path.sep)[1]
-                        modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
+                        modscan_list.append(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
                     # ================================================
                     # (RE)MOVE REDUNDANT README / CHANGELOG FILES
                     elif any(names.lower() in filename.lower() for names in filter_names) and filename.lower().endswith(".txt"):
