@@ -426,21 +426,21 @@ def crashlogs_scan():
                                 "====================================================\n"])
 
         def add_notice(message):
-            if counter.get(message, 0) == 0:
+            if messagecounter.get(message, 0) == 0:
                 autoscan_report.append(f"* NOTICE : {message} * \n-----\n")
-                counter[message] = counter.get(message, 0) + 1
+                messagecounter[message] = messagecounter.get(message, 0) + 1
 
         def add_caution(message, fix):
-            if counter.get(message, 0) == 0:
+            if messagecounter.get(message, 0) == 0:
                 if isinstance(fix, tuple) or isinstance(fix, list):
                     fix = f"{fix[0]}\n{fix[1]}"
                 autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" FIX: {fix}\n-----\n"])
-                counter[message] = counter.get(message, 0) + 1
+                messagecounter[message] = messagecounter.get(message, 0) + 1
 
         def add_success(message):
-            if counter.get(message, 0) == 0:
+            if messagecounter.get(message, 0) == 0:
                 autoscan_report.append(f"✔️ {message} \n-----\n")
-                counter[message] = counter.get(message, 0) + 1
+                messagecounter[message] = messagecounter.get(message, 0) + 1
 
         def check_and_report(condition, message, fix=None):
             if condition:
@@ -454,7 +454,7 @@ def crashlogs_scan():
 
         Is_XCellPresent = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
 
-        counter = {}
+        messagecounter = {}
 
         if not CMain.classic_settings("FCX Mode"):
             autoscan_report.extend([
