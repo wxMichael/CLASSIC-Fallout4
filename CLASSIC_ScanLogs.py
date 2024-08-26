@@ -433,8 +433,7 @@ def crashlogs_scan():
         def add_caution(message, fix):
             if messagecounter.get(message, 0) == 0:
                 if isinstance(fix, tuple) or isinstance(fix, list):
-                    fix = f"{fix[0]}\n{fix[1]}"
-                autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" FIX: {fix}\n-----\n"])
+                    autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" FIX: {fix}\n-----\n"])
                 messagecounter[message] = messagecounter.get(message, 0) + 1
 
         def add_success(message):
@@ -484,7 +483,8 @@ def crashlogs_scan():
                         if Is_BakaScraphHeapPresent and not Is_XCellPresent:
                             add_caution(
                                 "The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE",
-                                f"Remove Baka Scrapheap since it is obsolete and replaced by {crashgen_name}'s memory manager.\n ALTERNATE FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE."
+                                (f"Remove Baka ScrapHeap as both Buffout 4 and X-Cell offer superior memory management.",
+                                f"ALTERNATE FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE.")
                             )
                         elif Is_XCellPresent and not Is_BakaScraphHeapPresent:
                             add_caution(
