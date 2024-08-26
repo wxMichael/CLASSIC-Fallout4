@@ -430,10 +430,16 @@ def crashlogs_scan():
                 autoscan_report.append(f"* NOTICE : {message} * \n-----\n")
                 messagecounter[message] = messagecounter.get(message, 0) + 1
 
-        def add_caution(message, fix):
+        def add_caution(message, fix=None, secondary_message=None):
             if messagecounter.get(message, 0) == 0:
-                if isinstance(fix, tuple) or isinstance(fix, list):
+                if isinstance(fix, tuple) or isinstance(fix, list) and not secondary_message:
                     autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" FIX: {fix}\n-----\n"])
+                elif isinstance(fix, tuple) or isinstance(fix, list) and secondary_message:
+                    autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" FIX: {fix}\n", f" {secondary_message}\n-----\n"])
+                elif not fix and secondary_message:
+                    autoscan_report.extend([f"# ❌ CAUTION : {message} # \n", f" {secondary_message}\n-----\n"])
+                else:
+                    autoscan_report.append(f"# ❌ CAUTION : {message} # \n-----\n")
                 messagecounter[message] = messagecounter.get(message, 0) + 1
 
         def add_success(message):
@@ -441,13 +447,15 @@ def crashlogs_scan():
                 autoscan_report.append(f"✔️ {message} \n-----\n")
                 messagecounter[message] = messagecounter.get(message, 0) + 1
 
-        def check_and_report(condition, message, fix=None):
+        def check_and_report(condition, message, fix=None, secondary_message=None):
             if condition:
                 if isinstance(message, str):
                     message = [message]
                 for msg in message:
-                    if fix:
+                    if fix and not secondary_message:
                         add_caution(msg, fix)
+                    elif fix and secondary_message:
+                        add_caution(msg, fix, secondary_message)
                     else:
                         add_success(msg)
 
